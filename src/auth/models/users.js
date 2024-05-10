@@ -1,5 +1,5 @@
 'use strict';
-
+require('dotenv').config();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const userSchema = (sequelize, DataTypes) => {
@@ -21,10 +21,13 @@ const userSchema = (sequelize, DataTypes) => {
 
   // Basic AUTH: Validating strings (username, password) 
   model.authenticateBasic = async function (username, password) {
-    const user = await this.findOne({ username })
+    const user = await this.findOne({where: { username : username }});
     const valid = await bcrypt.compare(password, user.password)
-    if (valid) { return user; }
-    throw new Error('Invalid User');
+    //if (valid) { return user; }
+    //throw new Error('Invalid User');
+  
+    if(!valid)throw new Error('Invalid User');
+    return user;
   }
 
   // Bearer AUTH: Validating a token
@@ -32,7 +35,7 @@ const userSchema = (sequelize, DataTypes) => {
     // try {
       const parsedToken = jwt.verify(token, process.env.SECRET);
       console.log('parsedToken', parsedToken);
-      const user = this.findOne({ username: parsedToken.username })
+      const user = await this.findOne({where:{ username: parsedToken.username }});
       console.log('user', user);
       if (user) { return user; }
       throw new Error("User Not Found");
